@@ -2,12 +2,10 @@ use std::fmt;
 use std::time::Instant;
 
 use crate::helpers::hex_array;
+use crate::poh::constants::{SLOTS_PER_EPOCH, TICKS_PER_SLOT};
 use crate::poh::verify;
 
-use super::constants::{SLOTS_PER_EPOCH, TICKS_PER_SLOT};
-
 use hex::encode;
-
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -36,10 +34,10 @@ impl fmt::Display for PoHRecord {
 
         return write!(
             f,
-            "Epoch {} - Tick {} - Slot {} - Timestamp {}ms - Hash 0x{} - {}",
+            "Epoch {} - Slot {} - Tick {} - Timestamp {}ms - Hash 0x{} - {}",
             self.epoch,
-            self.tick_index,
             self.slot_index,
+            self.tick_index,
             self.timestamp_ms,
             encode(&self.hash),
             event_desc,
@@ -56,14 +54,14 @@ pub struct PoH {
 }
 
 impl PoH {
-    /// Create a new Proof of History (PoH) chain with the given seed data.
+    /// Create a new Proof of History (PoH) records with the given seed data.
     ///
-    /// The seed data is used to generate the first hash in the chain.
-    /// The PoH chain starts with tick index 0, slot index 0, and epoch 0.
+    /// The seed data is used to generate the first hash in the records.
+    /// The PoH records starts with tick index 0, slot index 0, and epoch 0.
     /// The timestamp is set to the current system time.
     ///
     /// # Parameters
-    /// - `seed`: The data used to generate the first hash in the chain.
+    /// - `seed`: The data used to generate the first hash in the records.
     ///
     /// # Returns
     /// A `PoH` object initialized with the given seed data.
@@ -95,14 +93,14 @@ impl PoH {
         return self.core(None);
     }
 
-    /// Insert an event into the PoH (Proof of History) chain.
+    /// Insert an event into the PoH (Proof of History) records.
     ///
-    /// This function adds the provided event data to the PoH chain by advancing the chain
+    /// This function adds the provided event data to the PoH records by advancing the records
     /// with the event data included in the hash calculation. It increments the tick count
     /// and returns a new PoHRecord containing the updated state.
     ///
     /// # Parameters
-    /// - `event_data`: A byte slice representing the event data to be inserted into the chain.
+    /// - `event_data`: A byte slice representing the event data to be inserted into the records.
     ///
     /// # Returns
     /// A `PoHRecord` with the updated tick index, slot index, epoch, hash, timestamp, and
@@ -151,24 +149,22 @@ impl PoH {
             self.slot_count = 0;
         }
 
-        let timestamp_ms: u64 = self.start_time.elapsed().as_micros() as u64 / 1000;
-
         return PoHRecord {
             tick_index: self.tick_count - 1,
             slot_index,
             epoch,
             hash: self.current_hash,
-            timestamp_ms,
+            timestamp_ms: self.start_time.elapsed().as_millis() as u64,
             event: event_data.map(|d| d.to_vec()),
         };
     }
 
-    pub fn verify_chain(records: &[PoHRecord]) -> bool {
-        return verify::verify_chain(records);
+    pub fn verify_records(records: &[PoHRecord]) -> bool {
+        return verify::verify_records(records);
     }
 
     #[cfg(test)]
     pub fn verify_timestamps(records: &[PoHRecord]) -> bool {
-        return verify::verify_timestamps(records);
+        return verify::verify_timestamps(records, true);
     }
 }

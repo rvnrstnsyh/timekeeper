@@ -1,10 +1,9 @@
-use std::thread;
-
 use std::sync::mpsc::{self, Receiver, SyncSender};
+use std::thread;
 use std::time::{Duration, Instant};
 
-use super::constants::{BATCH_SIZE, TICK_DURATION_US};
-use super::core::{PoH, PoHRecord};
+use crate::poh::constants::{BATCH_SIZE, TICK_DURATION_US};
+use crate::poh::core::{PoH, PoHRecord};
 
 /// Spawns a thread that generates a Proof of History (PoH) chain with the given seed and
 /// maximum number of ticks. The thread sends `PoHRecord`s over a channel for consumption.
@@ -28,7 +27,10 @@ pub fn poh_thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
     thread::spawn(move || {
         let mut poh: PoH = PoH::new(&seed);
         let mut records_batch: Vec<PoHRecord> = Vec::with_capacity(BATCH_SIZE);
+
         let start: Instant = Instant::now();
+        // Pre-calculate target completion times for each tick
+        let mut next_tick_target_us: u64 = TICK_DURATION_US;
 
         for i in 0..max_ticks {
             // Simulate event insertion every 10 ticks.
@@ -41,42 +43,53 @@ pub fn poh_thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
 
             records_batch.push(record);
 
-            // Send in batches for better performance.
+            // Send in batches but don't let batch operations delay timing.
             if records_batch.len() >= BATCH_SIZE {
                 if send_batch(&tx, &mut records_batch).is_err() {
                     break;
                 }
             }
 
-            // Calculate sleep time more accurately by accounting for processing time.
+            // More precise timing control.
             let elapsed_us: u64 = start.elapsed().as_micros() as u64;
-            let expected_time_us: u64 = (i + 1) * TICK_DURATION_US;
+            let target_us: u64 = next_tick_target_us;
 
-            if expected_time_us > elapsed_us {
-                thread::sleep(Duration::from_micros(expected_time_us - elapsed_us));
+            if elapsed_us < target_us {
+                // Use spin wait for sub-millisecond precision instead of sleep for very short waits.
+                if target_us - elapsed_us < 500 {
+                    while start.elapsed().as_micros() < target_us as u128 {}
+                } else {
+                    thread::sleep(Duration::from_micros(target_us - elapsed_us));
+                }
             }
+            // Calculate next tick target time.
+            next_tick_target_us += TICK_DURATION_US;
         }
-
         // Send any remaining records.
         let _ = send_batch(&tx, &mut records_batch);
     });
-
     return rx;
 }
 
-/// Sends all records in the given batch over the given channel.
+/// Sends a batch of `PoHRecord` items through a synchronous channel.
+///
+/// This function drains the provided vector of `PoHRecord` items and sends each record
+/// through the given `SyncSender`. Once all records are sent, the batch vector is empty.
 ///
 /// # Parameters
-/// - `tx`: The channel to send records over.
-/// - `batch`: The batch of records to send.
+/// - `tx`: A reference to a synchronous sender used to send `PoHRecord` items.
+/// - `batch`: A mutable reference to a vector of `PoHRecord` items to be sent. The vector
+///   will be empty after this function is executed.
 ///
 /// # Returns
-/// `Ok(())` if all records were sent successfully, `Err(())` if not.
-pub fn send_batch(tx: &SyncSender<PoHRecord>, batch: &mut Vec<PoHRecord>) -> Result<(), ()> {
+/// A `Result` indicating success or failure. If sending a record fails, an `mpsc::SendError`
+/// containing the unsent record is returned.
+fn send_batch(
+    tx: &SyncSender<PoHRecord>,
+    batch: &mut Vec<PoHRecord>,
+) -> Result<(), mpsc::SendError<PoHRecord>> {
     for record in batch.drain(..) {
-        if tx.send(record).is_err() {
-            return Err(());
-        }
+        tx.send(record)?;
     }
-    return Ok(());
+    Ok(())
 }

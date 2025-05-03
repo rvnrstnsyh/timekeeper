@@ -33,7 +33,7 @@ fn main() -> () {
     execute!(stdout(), Clear(ClearType::All), MoveTo(0, 0)).unwrap();
 
     let seed: &[u8; 64] = &[b'0'; 64];
-    let max_ticks: u64 = 48000; // Generate 48000 ticks (750 slots, 5 minutes).
+    let max_ticks: u64 = 48_000; // Generate 48000 ticks (750 slots, 5 minutes).
 
     let rx: Receiver<PoHRecord> = poh_thread(seed, max_ticks);
     let mut records_received: i32 = 0;
@@ -72,7 +72,6 @@ fn main() -> () {
             }
         }
     }
-
     return println!(
         "PoH generator finished, received {} records.",
         records_received
