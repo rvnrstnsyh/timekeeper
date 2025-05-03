@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
 use crate::blockchain::validator::Validator;
-use crate::poh::constants::{
+use crate::constants::{
     GENESIS_STAKE, MAX_TRANSACTIONS_PER_BLOCK, MIN_TRANSACTIONS_PER_BLOCK, REWARD_PER_BLOCK,
 };
 use crate::poh::core::PoHRecord;

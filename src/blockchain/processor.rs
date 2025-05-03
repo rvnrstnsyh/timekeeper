@@ -7,7 +7,7 @@ use crate::blockchain::block::Block;
 use crate::blockchain::state::BlockchainState;
 use crate::blockchain::transaction::Transaction;
 use crate::blockchain::validator::Validator;
-use crate::poh::constants::SLOT_DURATION_MS;
+use crate::constants::SLOT_DURATION_MS;
 use crate::poh::core::{PoH, PoHRecord};
 
 /// Blockchain processor that connects to the PoH generator.

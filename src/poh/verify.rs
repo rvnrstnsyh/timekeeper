@@ -1,4 +1,4 @@
-use crate::poh::constants::{SLOTS_PER_EPOCH, TICK_DURATION_US, TICKS_PER_SLOT};
+use crate::constants::{SLOTS_PER_EPOCH, TICK_DURATION_US, TICKS_PER_SLOT};
 use crate::poh::core::PoHRecord;
 
 use sha2::{Digest, Sha256};

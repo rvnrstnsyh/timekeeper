@@ -2,7 +2,7 @@ use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::poh::constants::{BATCH_SIZE, TICK_DURATION_US};
+use crate::constants::{BATCH_SIZE, TICK_DURATION_US};
 use crate::poh::core::{PoH, PoHRecord};
 
 /// Spawns a thread that generates a Proof of History (PoH) chain with the given seed and

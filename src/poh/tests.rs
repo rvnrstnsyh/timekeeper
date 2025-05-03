@@ -2,7 +2,7 @@
 use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 
-use crate::poh::constants::TICK_DURATION_US;
+use crate::constants::TICK_DURATION_US;
 use crate::poh::core::{PoH, PoHRecord};
 use crate::poh::generator::poh_thread;
 

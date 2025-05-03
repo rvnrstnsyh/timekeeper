@@ -2,9 +2,9 @@ use std::env;
 use std::io::stdout;
 use std::sync::mpsc::Receiver;
 
+use timekeeper::constants::BATCH_SIZE;
 use timekeeper::helpers::args::{OutputType, parse_args, print_usage};
 use timekeeper::helpers::output::save_records_to_json;
-use timekeeper::poh::constants::BATCH_SIZE;
 use timekeeper::poh::core::PoHRecord;
 use timekeeper::poh::generator::poh_thread;
 

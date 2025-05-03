@@ -1,8 +1,8 @@
 use std::fmt;
 use std::time::Instant;
 
+use crate::constants::{SLOTS_PER_EPOCH, TICKS_PER_SLOT};
 use crate::helpers::hex_array;
-use crate::poh::constants::{SLOTS_PER_EPOCH, TICKS_PER_SLOT};
 use crate::poh::verify;
 
 use hex::encode;
