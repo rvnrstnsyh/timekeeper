@@ -1,4 +1,4 @@
-use std::sync::mpsc::{self, Receiver, SyncSender};
+use std::sync::mpsc::{Receiver, SendError, SyncSender, sync_channel};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -18,10 +18,10 @@ use crate::poh::core::{PoH, PoHRecord};
 ///
 /// # Returns
 /// A `Receiver` that can be used to receive `PoHRecord`s from the spawned thread.
-pub fn poh_thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
+pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
     const CHANNEL_CAPACITY: usize = 100; // Buffer size to prevent blocking.
 
-    let (tx, rx) = mpsc::sync_channel(CHANNEL_CAPACITY);
+    let (tx, rx) = sync_channel(CHANNEL_CAPACITY);
     let seed: Vec<u8> = seed.to_vec();
 
     thread::spawn(move || {
@@ -50,12 +50,10 @@ pub fn poh_thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
                 }
             }
 
-            // More precise timing control.
             let elapsed_us: u64 = start.elapsed().as_micros() as u64;
             let target_us: u64 = next_tick_target_us;
 
             if elapsed_us < target_us {
-                // Use spin wait for sub-millisecond precision instead of sleep for very short waits.
                 if target_us - elapsed_us < 500 {
                     while start.elapsed().as_micros() < target_us as u128 {}
                 } else {
@@ -84,10 +82,7 @@ pub fn poh_thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
 /// # Returns
 /// A `Result` indicating success or failure. If sending a record fails, an `mpsc::SendError`
 /// containing the unsent record is returned.
-fn send_batch(
-    tx: &SyncSender<PoHRecord>,
-    batch: &mut Vec<PoHRecord>,
-) -> Result<(), mpsc::SendError<PoHRecord>> {
+fn send_batch(tx: &SyncSender<PoHRecord>, batch: &mut Vec<PoHRecord>) -> Result<(), SendError<PoHRecord>> {
     for record in batch.drain(..) {
         tx.send(record)?;
     }

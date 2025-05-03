@@ -53,12 +53,7 @@ impl Block {
         // Hash the block header.
         hasher.update(format!(
             "{}{}{}{}{}{}",
-            self.height,
-            self.slot,
-            self.epoch,
-            self.timestamp_ms,
-            self.validator,
-            self.previous_hash,
+            self.height, self.slot, self.epoch, self.timestamp_ms, self.validator, self.previous_hash,
         ));
         // Hash the PoH record hash
         hasher.update(&self.poh_record_hash);

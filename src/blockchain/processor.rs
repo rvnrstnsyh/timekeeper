@@ -144,12 +144,7 @@ impl BlockchainProcessor {
     /// Get blocks in a range.
     pub fn get_blocks(&self, start: u64, end: u64) -> Vec<Block> {
         let state: MutexGuard<'_, BlockchainState> = self.state.lock().unwrap();
-        return state
-            .blocks
-            .iter()
-            .filter(|b| b.height >= start && b.height < end)
-            .cloned()
-            .collect();
+        return state.blocks.iter().filter(|b| b.height >= start && b.height < end).cloned().collect();
     }
 
     /// Get a validator by address.

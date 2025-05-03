@@ -1,9 +1,9 @@
-use std::fmt;
+use std::fmt::{Display, Formatter, Result};
 use std::time::Instant;
 
 use crate::constants::{SLOTS_PER_EPOCH, TICKS_PER_SLOT};
-use crate::helpers::hex_array;
-use crate::poh::verify;
+use crate::helpers::serialization;
+use crate::poh::verifier;
 
 use hex::encode;
 use serde::{Deserialize, Serialize};
@@ -14,24 +14,23 @@ pub struct PoHRecord {
     pub tick_index: u64,
     pub slot_index: u64,
     pub epoch: u64,
-    #[serde(with = "hex_array")]
+    #[serde(with = "serialization")]
     pub hash: [u8; 32],
     pub timestamp_ms: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event: Option<Vec<u8>>,
 }
 
-impl fmt::Display for PoHRecord {
+impl Display for PoHRecord {
     /// Formats the `PoHRecord` in a human-readable way.
     ///
     /// Example output:
-    /// "Epoch 0 - Tick 0 - Slot 0 - Timestamp 0ms - Hash 0x0000000000000000000000000000000000000000000000000000000000000000 - No Event"
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    /// "Epoch 0 - Slot 0 - Tick 0 - Timestamp 0ms - Hash 0x0000000000000000000000000000000000000000000000000000000000000000 - Event: 0 bytes"
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let event_desc: String = match &self.event {
             Some(data) => format!("Event: {} bytes", data.len()),
             None => "No Event".to_string(),
         };
-
         return write!(
             f,
             "Epoch {} - Slot {} - Tick {} - Timestamp {}ms - Hash 0x{} - {}",
@@ -139,7 +138,7 @@ impl PoH {
         self.tick_count += 1;
 
         let slot_index: u64 = self.tick_count / TICKS_PER_SLOT;
-        let epoch: u64 = slot_index / SLOTS_PER_EPOCH; // Optimized calculation.
+        let epoch: u64 = slot_index / SLOTS_PER_EPOCH;
 
         if self.tick_count % TICKS_PER_SLOT == 0 {
             self.slot_count += 1;
@@ -148,7 +147,6 @@ impl PoH {
             self.epoch = epoch;
             self.slot_count = 0;
         }
-
         return PoHRecord {
             tick_index: self.tick_count - 1,
             slot_index,
@@ -160,11 +158,10 @@ impl PoH {
     }
 
     pub fn verify_records(records: &[PoHRecord]) -> bool {
-        return verify::verify_records(records);
+        return verifier::verify_records(records);
     }
 
-    #[cfg(test)]
     pub fn verify_timestamps(records: &[PoHRecord]) -> bool {
-        return verify::verify_timestamps(records, true);
+        return verifier::verify_timestamps(records, true);
     }
 }

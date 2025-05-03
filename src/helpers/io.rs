@@ -3,6 +3,8 @@ use std::io::Write;
 
 use crate::poh::core::PoHRecord;
 
+use serde_json::to_string_pretty;
+
 /// Saves PoH records to a file in JSON format.
 ///
 /// # Parameters
@@ -11,8 +13,8 @@ use crate::poh::core::PoHRecord;
 ///
 /// # Returns
 /// A Result indicating whether the save was successful.
-pub fn save_records_to_json(records: &[PoHRecord], filename: &str) -> std::io::Result<()> {
-    let json: String = serde_json::to_string_pretty(records)?;
+pub fn save_poh_records_to_json(records: &[PoHRecord], filename: &str) -> std::io::Result<()> {
+    let json: String = to_string_pretty(records)?;
     let mut file: File = File::create(format!("target/{}", filename))?;
 
     file.write_all(json.as_bytes())?;

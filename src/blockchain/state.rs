@@ -3,9 +3,7 @@ use std::collections::HashMap;
 use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
 use crate::blockchain::validator::Validator;
-use crate::constants::{
-    GENESIS_STAKE, MAX_TRANSACTIONS_PER_BLOCK, MIN_TRANSACTIONS_PER_BLOCK, REWARD_PER_BLOCK,
-};
+use crate::constants::{GENESIS_STAKE, MAX_TRANSACTIONS_PER_BLOCK, MIN_TRANSACTIONS_PER_BLOCK, REWARD_PER_BLOCK};
 use crate::poh::core::PoHRecord;
 
 use rand::Rng;
@@ -42,9 +40,7 @@ impl BlockchainState {
             "validator-4".to_string(),
         ];
         for address in validator_addresses {
-            state
-                .validators
-                .insert(address.clone(), Validator::new(&address, GENESIS_STAKE));
+            state.validators.insert(address.clone(), Validator::new(&address, GENESIS_STAKE));
         }
         return state;
     }

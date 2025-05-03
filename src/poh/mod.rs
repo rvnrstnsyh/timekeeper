@@ -1,6 +1,6 @@
 pub mod core;
-pub mod generator;
-pub mod verify;
+pub mod thread;
+pub mod verifier;
 
 #[cfg(test)]
 pub mod tests;

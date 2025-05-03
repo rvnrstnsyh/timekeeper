@@ -4,9 +4,9 @@ use std::sync::mpsc::Receiver;
 
 use timekeeper::constants::BATCH_SIZE;
 use timekeeper::helpers::args::{OutputType, parse_args, print_usage};
-use timekeeper::helpers::output::save_records_to_json;
+use timekeeper::helpers::io::save_poh_records_to_json;
 use timekeeper::poh::core::PoHRecord;
-use timekeeper::poh::generator::poh_thread;
+use timekeeper::poh::thread::thread;
 
 use crossterm::{
     cursor::MoveTo,
@@ -35,7 +35,7 @@ fn main() -> () {
     let seed: &[u8; 64] = &[b'0'; 64];
     let max_ticks: u64 = 48_000; // Generate 48000 ticks (750 slots, 5 minutes).
 
-    let rx: Receiver<PoHRecord> = poh_thread(seed, max_ticks);
+    let rx: Receiver<PoHRecord> = thread(seed, max_ticks);
     let mut records_received: i32 = 0;
     let mut all_records: Vec<PoHRecord> = Vec::new();
 
@@ -61,19 +61,11 @@ fn main() -> () {
                 }
                 records_received += 1;
             }
-
-            // Save to JSON file.
-            match save_records_to_json(&all_records, &filename) {
-                Ok(_) => println!(
-                    "Successfully saved {} records to file {}.",
-                    records_received, filename
-                ),
+            match save_poh_records_to_json(&all_records, &filename) {
+                Ok(_) => println!("Successfully saved {} records to file {}.", records_received, filename),
                 Err(e) => println!("Error saving file: {}", e),
             }
         }
     }
-    return println!(
-        "PoH generator finished, received {} records.",
-        records_received
-    );
+    return println!("PoH generator finished, received {} records.", records_received);
 }

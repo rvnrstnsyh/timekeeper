@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::constants::TICK_DURATION_US;
 use crate::poh::core::{PoH, PoHRecord};
-use crate::poh::generator::poh_thread;
+use crate::poh::thread::thread;
 
 /// Verifies that inserting an event changes the hash of the record.
 /// This test ensures that the hash of a record is different after an event is inserted.
@@ -70,7 +70,7 @@ fn timestamp_verification() -> () {
     let seed: &[u8; 64] = &[b'0'; 64];
     let max_ticks: u64 = 20;
 
-    let rx: Receiver<PoHRecord> = poh_thread(seed, max_ticks);
+    let rx: Receiver<PoHRecord> = thread(seed, max_ticks);
     let mut records: Vec<PoHRecord> = Vec::new();
 
     while let Ok(record) = rx.recv() {
@@ -89,7 +89,7 @@ fn time_accuracy() -> () {
     let seed: &[u8; 64] = &[b'0'; 64];
     let max_ticks: u64 = 480; // Generate 480 ticks (~7.5 slots, ~3 seconds).
     let start: Instant = Instant::now();
-    let rx: Receiver<PoHRecord> = poh_thread(seed, max_ticks);
+    let rx: Receiver<PoHRecord> = thread(seed, max_ticks);
     let mut records: Vec<PoHRecord> = Vec::new();
     let mut tick_times: Vec<Duration> = Vec::new();
     let mut last_tick: Instant = start;
@@ -110,15 +110,8 @@ fn time_accuracy() -> () {
         println!("Max tick duration: {:?}", max_tick);
         println!("Avg tick duration: {:?}", avg_tick);
         // Count ticks that exceeded limit.
-        let over_limit: usize = tick_times
-            .iter()
-            .filter(|&&d| d > Duration::from_micros(TICK_DURATION_US))
-            .count();
-        println!(
-            "Ticks exceeding limit: {} of {}",
-            over_limit,
-            tick_times.len()
-        );
+        let over_limit: usize = tick_times.iter().filter(|&&d| d > Duration::from_micros(TICK_DURATION_US)).count();
+        println!("Ticks exceeding limit: {} of {}", over_limit, tick_times.len());
     }
     // Should be 3 seconds with a tolerance of ~3ms.
     assert!(duration < Duration::from_micros(3_003_000));

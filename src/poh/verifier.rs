@@ -82,14 +82,12 @@ pub fn verify_timestamps(records: &[PoHRecord], log_failures: bool) -> bool {
         } else {
             TICK_DURATION_US / 2000 // ~0.5 ms tolerance.
         };
-
         // Ensure we don't underflow.
         let lower_bound: u64 = if expected_timestamp > allowed_drift {
             expected_timestamp - allowed_drift
         } else {
             0
         };
-
         let upper_bound: u64 = expected_timestamp + allowed_drift;
 
         let too_early: bool = timestamp < lower_bound;
@@ -102,11 +100,7 @@ pub fn verify_timestamps(records: &[PoHRecord], log_failures: bool) -> bool {
                     i,
                     timestamp,
                     expected_timestamp,
-                    if too_early {
-                        lower_bound - timestamp
-                    } else {
-                        timestamp - upper_bound
-                    },
+                    if too_early { lower_bound - timestamp } else { timestamp - upper_bound },
                     allowed_drift
                 );
             }
