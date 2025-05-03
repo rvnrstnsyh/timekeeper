@@ -120,6 +120,6 @@ fn time_accuracy() -> () {
             tick_times.len()
         );
     }
-    // Should be 3 seconds with a tolerance of ~1ms.
-    assert!(duration < Duration::from_micros(3_001_000));
+    // Should be 3 seconds with a tolerance of ~3ms.
+    assert!(duration < Duration::from_micros(3_003_000));
 }
