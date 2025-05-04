@@ -52,10 +52,7 @@ impl Transaction {
 
     /// Convert transaction to bytes for PoH event insertion.
     pub fn to_bytes(&self) -> Vec<u8> {
-        return match to_vec(self) {
-            Ok(bytes) => bytes,
-            Err(_) => Vec::new(),
-        };
+        return to_vec(self).unwrap_or_default();
     }
 }
 

@@ -5,7 +5,7 @@ pub enum OutputType {
 }
 
 /// Prints a usage message to stdout explaining how to run the program with and without arguments.
-pub fn print_usage() -> () {
+pub fn print_usage() {
     println!("Proof of History (PoH) with output options");
     println!("Usage:");
     println!("  Run this program [--json=FILENAME]");

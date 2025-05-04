@@ -26,7 +26,7 @@ pub fn verify_records(records: &[PoHRecord]) -> bool {
 
         // Verify hash records.
         let mut hasher = Sha256::new();
-        hasher.update(&prev.hash);
+        hasher.update(prev.hash);
 
         if let Some(ref evt) = curr.event {
             hasher.update(Sha256::digest(evt));
@@ -83,11 +83,7 @@ pub fn verify_timestamps(records: &[PoHRecord], log_failures: bool) -> bool {
             TICK_DURATION_US / 2000 // ~0.5 ms tolerance.
         };
         // Ensure we don't underflow.
-        let lower_bound: u64 = if expected_timestamp > allowed_drift {
-            expected_timestamp - allowed_drift
-        } else {
-            0
-        };
+        let lower_bound: u64 = expected_timestamp.saturating_sub(allowed_drift);
         let upper_bound: u64 = expected_timestamp + allowed_drift;
 
         let too_early: bool = timestamp < lower_bound;

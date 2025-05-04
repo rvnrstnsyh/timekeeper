@@ -18,7 +18,7 @@ use crossterm::{
 /// The PoH generator is started with a given seed and maximum number of ticks, and records are received
 /// over a channel and printed to stdout until the generator finishes. The number of records received is
 /// printed after the generator finishes.
-fn main() -> () {
+fn main() {
     // Process command line arguments.
     let args: Vec<String> = env::args().collect();
     let output_type: OutputType = match parse_args(&args) {

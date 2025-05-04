@@ -38,7 +38,7 @@ impl Display for PoHRecord {
             self.slot_index,
             self.tick_index,
             self.timestamp_ms,
-            encode(&self.hash),
+            encode(self.hash),
             event_desc,
         );
     }
@@ -115,9 +115,9 @@ impl PoH {
     /// epoch counts based on the number of ticks.
     ///
     /// # Parameters
-    /// - `event_data`: Optionally, a byte slice representing event data to be included in the
-    ///                 hash. If `Some`, the event data is hashed along with the current hash,
-    ///                 otherwise only the current hash is used.
+    ///  `event_data`: Optionally, a byte slice representing event data to be included in the
+    ///   hash. If `Some`, the event data is hashed along with the current hash,
+    ///   otherwise only the current hash is used.
     ///
     /// # Returns
     /// A `PoHRecord` containing the updated tick index, slot index, epoch, hash, timestamp, and
@@ -125,7 +125,7 @@ impl PoH {
     fn core(&mut self, event_data: Option<&[u8]>) -> PoHRecord {
         let mut hasher = Sha256::new();
 
-        hasher.update(&self.current_hash);
+        hasher.update(self.current_hash);
 
         // If there is an event, hash the event data as part of the hash input.
         if let Some(event) = event_data {

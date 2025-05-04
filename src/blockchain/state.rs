@@ -90,10 +90,7 @@ impl BlockchainState {
         // }
 
         // Select a validator for this slot.
-        let validator_address: String = match self.select_validator() {
-            Some(address) => address,
-            None => return None,
-        };
+        let validator_address: String = self.select_validator()?;
         // Get transactions for this block, even if empty.
         let transactions: Vec<Transaction> = if !self.pending_transactions.is_empty() {
             let tx_count: usize = std::cmp::min(
@@ -113,7 +110,7 @@ impl BlockchainState {
             transactions,
             &validator_address,
             &self.last_block_hash,
-            &hex::encode(&poh_record.hash),
+            &hex::encode(poh_record.hash),
         );
         // Update the validator's stats.
         if let Some(validator) = self.validators.get_mut(&validator_address) {
@@ -126,5 +123,11 @@ impl BlockchainState {
         self.blocks.push(block.clone());
         self.last_block_hash = block.hash.clone();
         return Some(block);
+    }
+}
+
+impl Default for BlockchainState {
+    fn default() -> Self {
+        Self::new()
     }
 }

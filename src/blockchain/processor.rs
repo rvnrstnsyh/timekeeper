@@ -70,7 +70,7 @@ impl BlockchainProcessor {
     }
 
     /// Start the blockchain processor in a separate thread.
-    pub fn start(&self, poh: Arc<Mutex<PoH>>, running: Arc<AtomicBool>) -> () {
+    pub fn start(&self, poh: Arc<Mutex<PoH>>, running: Arc<AtomicBool>) {
         let state: Arc<Mutex<BlockchainState>> = self.state.clone();
         let tx_queue: Arc<Mutex<Vec<Transaction>>> = self.transaction_queue.clone();
 
@@ -157,5 +157,11 @@ impl BlockchainProcessor {
     pub fn get_validators(&self) -> Vec<Validator> {
         let state: MutexGuard<'_, BlockchainState> = self.state.lock().unwrap();
         return state.validators.values().cloned().collect();
+    }
+}
+
+impl Default for BlockchainProcessor {
+    fn default() -> Self {
+        return Self::new();
     }
 }

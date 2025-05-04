@@ -44,10 +44,8 @@ pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
             records_batch.push(record);
 
             // Send in batches but don't let batch operations delay timing.
-            if records_batch.len() >= BATCH_SIZE {
-                if send_batch(&tx, &mut records_batch).is_err() {
-                    break;
-                }
+            if records_batch.len() >= BATCH_SIZE && send_batch(&tx, &mut records_batch).is_err() {
+                break;
             }
 
             let elapsed_us: u64 = start.elapsed().as_micros() as u64;
