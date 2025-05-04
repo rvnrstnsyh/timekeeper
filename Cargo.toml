@@ -7,6 +7,10 @@ version = "0.0.1"
 edition = "2024"
 rust-version = "1.86.0"
 
+[lib]
+name = "timekeeper"
+path = "src/lib.rs"
+
 [dependencies]
 crossterm = "0.29.0"
 hex = "0.4.3"
@@ -14,3 +18,26 @@ rand = "0.9.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 sha2 = "0.10.9"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false
+
+[profile.test]
+opt-level = 0
+lto = true
+codegen-units = 1
+debug = true
+
+[profile.bench]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = true
