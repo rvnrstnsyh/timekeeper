@@ -1,13 +1,13 @@
 use std::fmt::{Display, Formatter, Result};
 use std::time::Instant;
 
-use crate::constants::{SLOTS_PER_EPOCH, TICKS_PER_SLOT};
 use crate::helpers::serialization;
+use crate::poh::hash;
 use crate::poh::verifier;
+use crate::{HASHES_PER_TICK, SLOTS_PER_EPOCH, TICKS_PER_SLOT};
 
 use hex::encode;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoHRecord {
@@ -25,22 +25,21 @@ impl Display for PoHRecord {
     /// Formats the `PoHRecord` in a human-readable way.
     ///
     /// Example output:
-    /// "Epoch 0 - Slot 0 - Tick 0 - Timestamp 0ms - Hash 0x0000000000000000000000000000000000000000000000000000000000000000 - Event: 0 bytes"
+    /// "Epoch 0, Slot 0, Tick 0, Timestamp 0ms, Hash 0x000000000000000..."
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let event_desc: String = match &self.event {
+        let _event_desc: String = match &self.event {
             Some(data) => format!("Event: {} bytes", data.len()),
             None => "No Event".to_string(),
         };
-        return write!(
+        write!(
             f,
-            "Epoch {} - Slot {} - Tick {} - Timestamp {}ms - Hash 0x{} - {}",
+            "Epoch {}, Slot {}, Tick {}, Timestamp {}ms, Hash 0x{}...",
             self.epoch,
             self.slot_index,
             self.tick_index,
             self.timestamp_ms,
-            encode(self.hash),
-            event_desc,
-        );
+            &encode(self.hash)[..15]
+        )
     }
 }
 
@@ -65,18 +64,14 @@ impl PoH {
     /// # Returns
     /// A `PoH` object initialized with the given seed data.
     pub fn new(seed: &[u8]) -> Self {
-        let hash_result = Sha256::digest(seed);
-        let mut current_hash: [u8; 32] = [0u8; 32];
-
-        current_hash.copy_from_slice(&hash_result);
-
-        return Self {
+        let current_hash: [u8; 32] = hash::hash(seed);
+        Self {
             current_hash,
             tick_count: 0,
             slot_count: 0,
             epoch: 0,
             start_time: Instant::now(),
-        };
+        }
     }
 
     /// PoH (Proof of History) by one tick.
@@ -89,7 +84,7 @@ impl PoH {
     /// # Returns
     /// A new `PoHRecord` with the updated hash, tick index, slot index, epoch, and timestamp.
     pub fn next_tick(&mut self) -> PoHRecord {
-        return self.core(None);
+        self.core(None)
     }
 
     /// Insert an event into the PoH (Proof of History) records.
@@ -105,7 +100,7 @@ impl PoH {
     /// A `PoHRecord` with the updated tick index, slot index, epoch, hash, timestamp, and
     /// the inserted event data.
     pub fn insert_event(&mut self, event_data: &[u8]) -> PoHRecord {
-        return self.core(Some(event_data));
+        self.core(Some(event_data))
     }
 
     /// PoH (Proof of History) by either generating a new tick or inserting an event.
@@ -123,18 +118,12 @@ impl PoH {
     /// A `PoHRecord` containing the updated tick index, slot index, epoch, hash, timestamp, and
     /// optional event data.
     fn core(&mut self, event_data: Option<&[u8]>) -> PoHRecord {
-        let mut hasher = Sha256::new();
-
-        hasher.update(self.current_hash);
-
-        // If there is an event, hash the event data as part of the hash input.
         if let Some(event) = event_data {
-            hasher.update(Sha256::digest(event));
+            self.current_hash = hash::hash_with_data(&self.current_hash, event);
         }
 
-        let new_hash = hasher.finalize();
-
-        self.current_hash.copy_from_slice(&new_hash);
+        // Now extend the hash chain by HASHES_PER_TICK hashes using centralized function.
+        self.current_hash = hash::extend_hash_chain(&self.current_hash, HASHES_PER_TICK);
         self.tick_count += 1;
 
         let slot_index: u64 = self.tick_count / TICKS_PER_SLOT;
@@ -147,21 +136,22 @@ impl PoH {
             self.epoch = epoch;
             self.slot_count = 0;
         }
-        return PoHRecord {
+
+        PoHRecord {
             tick_index: self.tick_count - 1,
             slot_index,
             epoch,
             hash: self.current_hash,
             timestamp_ms: self.start_time.elapsed().as_millis() as u64,
             event: event_data.map(|d| d.to_vec()),
-        };
+        }
     }
 
     pub fn verify_records(records: &[PoHRecord]) -> bool {
-        return verifier::verify_records(records);
+        verifier::verify_records(records)
     }
 
     pub fn verify_timestamps(records: &[PoHRecord]) -> bool {
-        return verifier::verify_timestamps(records, true);
+        verifier::verify_timestamps(records, true)
     }
 }

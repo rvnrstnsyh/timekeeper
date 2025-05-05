@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
 use crate::blockchain::validator::Validator;
-use crate::constants::{GENESIS_STAKE, MAX_TRANSACTIONS_PER_BLOCK, MIN_TRANSACTIONS_PER_BLOCK, REWARD_PER_BLOCK};
 use crate::poh::core::PoHRecord;
+use crate::{GENESIS_STAKE, MAX_TRANSACTIONS_PER_BLOCK, MIN_TRANSACTIONS_PER_BLOCK, REWARD_PER_BLOCK};
 
 use rand::Rng;
 use rand::rngs::ThreadRng;

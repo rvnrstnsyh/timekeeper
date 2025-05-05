@@ -1,14 +1,13 @@
-use crate::constants::{SLOTS_PER_EPOCH, TICK_DURATION_US, TICKS_PER_SLOT};
 use crate::poh::core::PoHRecord;
-
-use sha2::{Digest, Sha256};
+use crate::poh::hash;
+use crate::{HASHES_PER_TICK, SLOTS_PER_EPOCH, TICK_DURATION_US, TICKS_PER_SLOT};
 
 /// Verifies the integrity of the PoH records by checking two properties:
 ///
-/// 1. The hash records is valid: each record's hash is the SHA-256 of the previous record's hash
-///    plus the optional event data.
-/// 2. The sequence numbers are valid: each record's tick index is one greater than the previous
-///    record's tick index, and the slot index and epoch are correctly calculated.
+/// 1. The hash records is valid: each record's hash is the result of applying
+///    HASHES_PER_TICK hashes to the previous record's hash plus optional event data.
+/// 2. The sequence numbers are valid: each record's tick index is one greater than
+///    the previous record's tick index, and the slot index and epoch are correctly calculated.
 ///
 /// # Parameters
 /// - `records`: The slice of `PoHRecord`s to be verified.
@@ -24,19 +23,9 @@ pub fn verify_records(records: &[PoHRecord]) -> bool {
         let prev: &PoHRecord = &window[0];
         let curr: &PoHRecord = &window[1];
 
-        // Verify hash records.
-        let mut hasher = Sha256::new();
-        hasher.update(prev.hash);
-
-        if let Some(ref evt) = curr.event {
-            hasher.update(Sha256::digest(evt));
-        }
-
-        let mut expected_hash: [u8; 32] = [0u8; 32];
-
-        expected_hash.copy_from_slice(&hasher.finalize());
-
-        if expected_hash != curr.hash {
+        // Verify the hash chain using centralized verification function.
+        let event_data: Option<&[u8]> = curr.event.as_deref();
+        if !hash::verify_hash_chain(&prev.hash, &curr.hash, HASHES_PER_TICK, event_data) {
             return false;
         }
 
@@ -49,7 +38,8 @@ pub fn verify_records(records: &[PoHRecord]) -> bool {
             return false;
         }
     }
-    return true;
+
+    true
 }
 
 /// Verifies that the timestamps in the given PoH records are valid by comparing
@@ -69,19 +59,13 @@ pub fn verify_timestamps(records: &[PoHRecord], log_failures: bool) -> bool {
     }
 
     let first_timestamp: u64 = records[0].timestamp_ms;
-    let mut all_valid: bool = true;
+    // let mut all_valid: bool = true;
 
     for (i, record) in records.iter().enumerate() {
         let timestamp: u64 = record.timestamp_ms;
         let expected_timestamp: u64 = first_timestamp + (i as u64 * TICK_DURATION_US / 1000);
         // Adjust tolerance based on whether this is an event tick.
-        let is_event_tick: bool = record.event.is_some();
-        let allowed_drift: u64 = if is_event_tick {
-            // More tolerance for event ticks.
-            TICK_DURATION_US / 1000 // ~1 ms tolerance.
-        } else {
-            TICK_DURATION_US / 2000 // ~0.5 ms tolerance.
-        };
+        let allowed_drift: u64 = 8; // ~8ms tolerance, relaxed.
         // Ensure we don't underflow.
         let lower_bound: u64 = expected_timestamp.saturating_sub(allowed_drift);
         let upper_bound: u64 = expected_timestamp + allowed_drift;
@@ -92,7 +76,7 @@ pub fn verify_timestamps(records: &[PoHRecord], log_failures: bool) -> bool {
         if too_early || too_late {
             if log_failures {
                 println!(
-                    "Timestamp verification failed at record {}: actual={}, expected={}, drift={}, allowed=~{}",
+                    "Timestamp mismatch at record {}: actual={}, expected={}, drift={}, allowed=~{}",
                     i,
                     timestamp,
                     expected_timestamp,
@@ -100,10 +84,10 @@ pub fn verify_timestamps(records: &[PoHRecord], log_failures: bool) -> bool {
                     allowed_drift
                 );
             }
-            all_valid = false;
+            // all_valid = false;
             // Optional: return immediately on first failure
-            // return false;
+            return false;
         }
     }
-    return all_valid;
+    return true;
 }

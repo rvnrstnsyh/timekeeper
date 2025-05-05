@@ -2,8 +2,8 @@ use std::fmt::{Display, Formatter, Result};
 
 use crate::blockchain::transaction::Transaction;
 
+use ring::digest::{Context, Digest, SHA256};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 /// Represents a block in the blockchain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,20 +49,32 @@ impl Block {
 
     /// Calculate the hash of the block.
     fn calculate_hash(&self) -> String {
-        let mut hasher = Sha256::new();
+        let mut context: Context = Context::new(&SHA256);
         // Hash the block header.
-        hasher.update(format!(
+        let header_string: String = format!(
             "{}{}{}{}{}{}",
             self.height, self.slot, self.epoch, self.timestamp_ms, self.validator, self.previous_hash,
-        ));
-        // Hash the PoH record hash
-        hasher.update(&self.poh_record_hash);
-        // Hash the transactions
+        );
+
+        context.update(header_string.as_bytes());
+        // Hash the PoH record hash.
+        context.update(self.poh_record_hash.as_bytes());
+
+        // Hash the transactions.
         for tx in &self.transactions {
-            hasher.update(&tx.id);
-            hasher.update(&tx.signature);
+            context.update(tx.id.as_bytes());
+            context.update(tx.signature.as_bytes());
         }
-        return format!("{:x}", hasher.finalize());
+
+        // Finalize and convert to hex string.
+        let hash_result: Digest = context.finish();
+        // Convert to hex string - equivalent to format!("{:x}", hasher.finalize()).
+        let mut hex_string: String = String::with_capacity(hash_result.as_ref().len() * 2);
+
+        for byte in hash_result.as_ref() {
+            hex_string.push_str(&format!("{:02x}", byte));
+        }
+        return hex_string;
     }
 
     /// Verify the integrity of the block.

@@ -2,9 +2,9 @@
 use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 
-use crate::constants::TICK_DURATION_US;
-use crate::poh::core::{PoH, PoHRecord};
-use crate::poh::thread::thread;
+use timekeeper::TICK_DURATION_US;
+use timekeeper::poh::core::{PoH, PoHRecord};
+use timekeeper::poh::thread::thread;
 
 /// Verifies that inserting an event changes the hash of the record.
 /// This test ensures that the hash of a record is different after an event is inserted.

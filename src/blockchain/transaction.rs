@@ -3,10 +3,11 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use hex::encode;
 use rand::{Rng, rng};
+use ring::digest::{Digest, SHA256, digest};
 use serde::{Deserialize, Serialize};
 use serde_json::to_vec;
-use sha2::{Digest, Sha256};
 
 /// Represents a transaction in the blockchain
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,10 +27,11 @@ impl Transaction {
         let id: String = format!("tx-{}-{}", now, rng().random::<u32>());
         // In a real implementation, this would be a cryptographic signature.
         let signature: String = {
-            let mut hasher = Sha256::new();
-            hasher.update(format!("{}{}{}{}", sender, recipient, amount, now));
-            format!("{:x}", hasher.finalize())
+            let message: String = format!("{}{}{}{}", sender, recipient, amount, now);
+            let hash_result: Digest = digest(&SHA256, message.as_bytes());
+            encode(hash_result.as_ref())
         };
+
         return Self {
             id,
             sender: sender.to_string(),
@@ -43,9 +45,9 @@ impl Transaction {
     /// Verify the transaction signature.
     pub fn verify(&self) -> bool {
         // In a real implementation, this would verify the cryptographic signature.
-        let mut hasher = Sha256::new();
-        hasher.update(format!("{}{}{}{}", self.sender, self.recipient, self.amount, self.timestamp_ms));
-        let calculated_signature: String = format!("{:x}", hasher.finalize());
+        let message: String = format!("{}{}{}{}", self.sender, self.recipient, self.amount, self.timestamp_ms);
+        let hash_result: Digest = digest(&SHA256, message.as_bytes());
+        let calculated_signature: String = encode(hash_result.as_ref());
 
         return calculated_signature == self.signature;
     }

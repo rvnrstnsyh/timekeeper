@@ -3,7 +3,7 @@ name = "timekeeper"
 description = "Proof of History (PoH)"
 authors = ["Rivane Rasetiansyah <re@nvll.me>"]
 repository = "https://github.com/rvnrstnsyh/timekeeper"
-version = "0.0.1"
+version = "0.0.4"
 edition = "2024"
 rust-version = "1.86.0"
 
@@ -15,9 +15,9 @@ path = "src/lib.rs"
 crossterm = "0.29.0"
 hex = "0.4.3"
 rand = "0.9.1"
+ring = "0.17.14"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
-sha2 = "0.10.9"
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -41,3 +41,7 @@ opt-level = 3
 lto = true
 codegen-units = 1
 debug = true
+
+[[bench]]
+name = "poh"
+harness = false
