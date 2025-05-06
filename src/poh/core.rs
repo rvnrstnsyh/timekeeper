@@ -4,7 +4,7 @@ use std::time::Instant;
 use crate::helpers::serialization;
 use crate::poh::hash;
 use crate::poh::verifier;
-use crate::{HASHES_PER_TICK, SLOTS_PER_EPOCH, TICKS_PER_SLOT};
+use crate::{DEFAULT_HASHES_PER_TICK, DEFAULT_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT};
 
 use hex::encode;
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub struct PoHRecord {
     pub tick_index: u64,
     pub slot_index: u64,
-    pub epoch: u64,
+    pub epoch_index: u64,
     #[serde(with = "serialization")]
     pub hash: [u8; 32],
     pub timestamp_ms: u64,
@@ -34,11 +34,11 @@ impl Display for PoHRecord {
         write!(
             f,
             "Epoch {}, Slot {}, Tick {}, Timestamp {}ms, Hash 0x{}...",
-            self.epoch,
+            self.epoch_index,
             self.slot_index,
             self.tick_index,
             self.timestamp_ms,
-            &encode(self.hash)[..15]
+            &encode(self.hash)[..17]
         )
     }
 }
@@ -47,7 +47,7 @@ pub struct PoH {
     current_hash: [u8; 32],
     tick_count: u64,
     slot_count: u64,
-    epoch: u64,
+    epoch_count: u64,
     start_time: Instant, // Using Instant for more accurate time measurement.
 }
 
@@ -69,7 +69,7 @@ impl PoH {
             current_hash,
             tick_count: 0,
             slot_count: 0,
-            epoch: 0,
+            epoch_count: 0,
             start_time: Instant::now(),
         }
     }
@@ -122,29 +122,32 @@ impl PoH {
             self.current_hash = hash::hash_with_data(&self.current_hash, event);
         }
 
-        // Now extend the hash chain by HASHES_PER_TICK hashes using centralized function.
-        self.current_hash = hash::extend_hash_chain(&self.current_hash, HASHES_PER_TICK);
-        self.tick_count += 1;
+        // Now extend the hash chain by DEFAULT_HASHES_PER_TICK hashes using centralized function.
+        self.current_hash = hash::extend_hash_chain(&self.current_hash, DEFAULT_HASHES_PER_TICK);
 
-        let slot_index: u64 = self.tick_count / TICKS_PER_SLOT;
-        let epoch: u64 = slot_index / SLOTS_PER_EPOCH;
-
-        if self.tick_count % TICKS_PER_SLOT == 0 {
-            self.slot_count += 1;
-        }
-        if slot_index % SLOTS_PER_EPOCH == 0 && self.tick_count % TICKS_PER_SLOT == 0 {
-            self.epoch = epoch;
-            self.slot_count = 0;
-        }
-
-        PoHRecord {
-            tick_index: self.tick_count - 1,
+        let tick_index: u64 = self.tick_count;
+        let slot_index: u64 = tick_index / DEFAULT_TICKS_PER_SLOT;
+        let epoch_index: u64 = slot_index / DEFAULT_SLOTS_PER_EPOCH;
+        let record: PoHRecord = PoHRecord {
+            tick_index,
             slot_index,
-            epoch,
+            epoch_index,
             hash: self.current_hash,
             timestamp_ms: self.start_time.elapsed().as_millis() as u64,
             event: event_data.map(|d| d.to_vec()),
+        };
+
+        self.tick_count += 1;
+
+        if self.tick_count % DEFAULT_TICKS_PER_SLOT == 0 {
+            self.slot_count += 1;
         }
+        if slot_index % DEFAULT_SLOTS_PER_EPOCH == 0 && self.tick_count % DEFAULT_TICKS_PER_SLOT == 0 {
+            self.epoch_count = epoch_index;
+            self.slot_count = 0;
+        }
+
+        return record;
     }
 
     pub fn verify_records(records: &[PoHRecord]) -> bool {

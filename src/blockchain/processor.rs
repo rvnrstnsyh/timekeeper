@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::SLOT_DURATION_MS;
+use crate::DEFAULT_MS_PER_SLOT;
 use crate::blockchain::block::Block;
 use crate::blockchain::state::BlockchainState;
 use crate::blockchain::transaction::Transaction;
@@ -64,7 +64,7 @@ impl BlockchainProcessor {
         let mut state: MutexGuard<'_, BlockchainState> = self.state.lock().unwrap();
         // Update the current slot and epoch.
         state.current_slot = poh_record.slot_index;
-        state.current_epoch = poh_record.epoch;
+        state.current_epoch = poh_record.epoch_index;
         // Generate a new block for this slot.
         return state.generate_block(poh_record);
     }
@@ -83,7 +83,7 @@ impl BlockchainProcessor {
             while running.load(Ordering::Relaxed) {
                 // Simulate slot timing.
                 let elapsed_ms: u64 = start_time.elapsed().as_millis() as u64;
-                let current_slot: u64 = elapsed_ms / SLOT_DURATION_MS;
+                let current_slot: u64 = elapsed_ms / DEFAULT_MS_PER_SLOT;
 
                 if current_slot > last_slot {
                     // Get PoH record for this slot.

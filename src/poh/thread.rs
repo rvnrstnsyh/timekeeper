@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::poh::core::{PoH, PoHRecord};
 use crate::poh::hash;
-use crate::{BATCH_SIZE, CHANNEL_CAPACITY, SPINLOCK_THRESHOLD_US, TICK_DURATION_US};
+use crate::{DEFAULT_BATCH_SIZE, DEFAULT_CHANNEL_CAPACITY, DEFAULT_SPINLOCK_THRESHOLD_US, DEFAULT_US_PER_TICK};
 
 /// Spawns a thread that generates a Proof of History (PoH) chain with the given seed and
 /// maximum number of ticks. The thread sends `PoHRecord`s over a channel for consumption.
@@ -20,30 +20,16 @@ use crate::{BATCH_SIZE, CHANNEL_CAPACITY, SPINLOCK_THRESHOLD_US, TICK_DURATION_U
 /// # Returns
 /// A `Receiver` that can be used to receive `PoHRecord`s from the spawned thread.
 pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
-    let (tx, rx) = sync_channel(CHANNEL_CAPACITY);
+    let (tx, rx) = sync_channel(DEFAULT_CHANNEL_CAPACITY);
     let seed: Vec<u8> = seed.to_vec();
 
     thread::spawn(move || {
         let mut poh: PoH = PoH::new(&seed);
-        let mut records_batch: Vec<PoHRecord> = Vec::with_capacity(BATCH_SIZE);
+        let mut records_batch: Vec<PoHRecord> = Vec::with_capacity(DEFAULT_BATCH_SIZE);
 
         let start: Instant = Instant::now();
         // Pre-calculate target completion times for each tick.
-        let mut next_tick_target_us: u64 = TICK_DURATION_US;
-
-        // Use a higher priority thread if possible.
-        #[cfg(target_os = "linux")]
-        {
-            use std::io;
-            use std::thread::ThreadId;
-            // Attempt to set thread to real-time priority (requires root privileges).
-            // This is optional and will silently fail if not running with proper permissions.
-            if let Some(thread_id) = std::thread::current().id().as_u64() {
-                let _ = unsafe {
-                    libc::pthread_setschedprio(thread_id as usize as *mut libc::c_void, libc::SCHED_FIFO);
-                };
-            }
-        }
+        let mut next_tick_target_us: u64 = DEFAULT_US_PER_TICK;
 
         for i in 0..max_ticks {
             // Simulate event insertion every 10 ticks.
@@ -56,7 +42,7 @@ pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
 
             records_batch.push(record);
             // Send in batches but don't let batch operations delay timing.
-            if records_batch.len() >= BATCH_SIZE && send_batch(&tx, &mut records_batch).is_err() {
+            if records_batch.len() >= DEFAULT_BATCH_SIZE && send_batch(&tx, &mut records_batch).is_err() {
                 break;
             }
 
@@ -66,7 +52,7 @@ pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
             if elapsed_us < target_us {
                 let sleep_us: u64 = target_us - elapsed_us;
                 // Use spin waiting for very short sleeps to improve precision.
-                if sleep_us < SPINLOCK_THRESHOLD_US {
+                if sleep_us < DEFAULT_SPINLOCK_THRESHOLD_US {
                     // Spin wait for greater timing precision.
                     let spin_until: u64 = start.elapsed().as_micros() as u64 + sleep_us;
                     while start.elapsed().as_micros() < spin_until as u128 {
@@ -82,7 +68,7 @@ pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
                 }
             }
             // Calculate next tick target time.
-            next_tick_target_us += TICK_DURATION_US;
+            next_tick_target_us += DEFAULT_US_PER_TICK;
         }
         // Send any remaining records.
         let _ = send_batch(&tx, &mut records_batch);
@@ -118,6 +104,6 @@ fn send_batch(tx: &SyncSender<PoHRecord>, batch: &mut Vec<PoHRecord>) -> Result<
 pub fn compute_hashes(iterations: u64) {
     // Use a zero-initialized hash as starting point.
     let zero_hash = [0u8; 32];
-    // Use our centralized hash function to extend the hash chain.
+    // Use centralized hash function to extend the hash chain.
     let _ = hash::extend_hash_chain(&zero_hash, iterations);
 }

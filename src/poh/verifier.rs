@@ -1,11 +1,11 @@
 use crate::poh::core::PoHRecord;
 use crate::poh::hash;
-use crate::{HASHES_PER_TICK, SLOTS_PER_EPOCH, TICK_DURATION_US, TICKS_PER_SLOT};
+use crate::{DEFAULT_HASHES_PER_TICK, DEFAULT_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT, DEFAULT_US_PER_TICK};
 
 /// Verifies the integrity of the PoH records by checking two properties:
 ///
 /// 1. The hash records is valid: each record's hash is the result of applying
-///    HASHES_PER_TICK hashes to the previous record's hash plus optional event data.
+///    DEFAULT_HASHES_PER_TICK hashes to the previous record's hash plus optional event data.
 /// 2. The sequence numbers are valid: each record's tick index is one greater than
 ///    the previous record's tick index, and the slot index and epoch are correctly calculated.
 ///
@@ -25,21 +25,20 @@ pub fn verify_records(records: &[PoHRecord]) -> bool {
 
         // Verify the hash chain using centralized verification function.
         let event_data: Option<&[u8]> = curr.event.as_deref();
-        if !hash::verify_hash_chain(&prev.hash, &curr.hash, HASHES_PER_TICK, event_data) {
+        if !hash::verify_hash_chain(&prev.hash, &curr.hash, DEFAULT_HASHES_PER_TICK, event_data) {
             return false;
         }
 
         // Verify sequence numbers.
         let tick_index_valid: bool = curr.tick_index == prev.tick_index + 1;
-        let slot_index_valid: bool = curr.slot_index == curr.tick_index / TICKS_PER_SLOT;
-        let epoch_valid: bool = curr.epoch == curr.tick_index / (TICKS_PER_SLOT * SLOTS_PER_EPOCH);
+        let slot_index_valid: bool = curr.slot_index == curr.tick_index / DEFAULT_TICKS_PER_SLOT;
+        let epoch_valid: bool = curr.epoch_index == curr.tick_index / (DEFAULT_TICKS_PER_SLOT * DEFAULT_SLOTS_PER_EPOCH);
 
         if !(tick_index_valid && slot_index_valid && epoch_valid) {
             return false;
         }
     }
-
-    true
+    return true;
 }
 
 /// Verifies that the timestamps in the given PoH records are valid by comparing
@@ -63,7 +62,7 @@ pub fn verify_timestamps(records: &[PoHRecord], log_failures: bool) -> bool {
 
     for (i, record) in records.iter().enumerate() {
         let timestamp: u64 = record.timestamp_ms;
-        let expected_timestamp: u64 = first_timestamp + (i as u64 * TICK_DURATION_US / 1000);
+        let expected_timestamp: u64 = first_timestamp + (i as u64 * DEFAULT_US_PER_TICK / 1000);
         // Adjust tolerance based on whether this is an event tick.
         let allowed_drift: u64 = 8; // ~8ms tolerance, relaxed.
         // Ensure we don't underflow.

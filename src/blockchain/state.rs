@@ -4,7 +4,7 @@ use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
 use crate::blockchain::validator::Validator;
 use crate::poh::core::PoHRecord;
-use crate::{GENESIS_STAKE, MAX_TRANSACTIONS_PER_BLOCK, MIN_TRANSACTIONS_PER_BLOCK, REWARD_PER_BLOCK};
+use crate::{DEFAULT_GENESIS_STAKE, DEFAULT_MAX_TRANSACTIONS_PER_BLOCK, DEFAULT_MIN_TRANSACTIONS_PER_BLOCK, DEFAULT_REWARD_PER_BLOCK};
 
 use rand::Rng;
 use rand::rngs::ThreadRng;
@@ -40,7 +40,7 @@ impl BlockchainState {
             "validator-4".to_string(),
         ];
         for address in validator_addresses {
-            state.validators.insert(address.clone(), Validator::new(&address, GENESIS_STAKE));
+            state.validators.insert(address.clone(), Validator::new(&address, DEFAULT_GENESIS_STAKE));
         }
         return state;
     }
@@ -94,7 +94,7 @@ impl BlockchainState {
         // Get transactions for this block, even if empty.
         let transactions: Vec<Transaction> = if !self.pending_transactions.is_empty() {
             let tx_count: usize = std::cmp::min(
-                rand::rng().random_range(MIN_TRANSACTIONS_PER_BLOCK..=MAX_TRANSACTIONS_PER_BLOCK),
+                rand::rng().random_range(DEFAULT_MIN_TRANSACTIONS_PER_BLOCK..=DEFAULT_MAX_TRANSACTIONS_PER_BLOCK),
                 self.pending_transactions.len(),
             );
             self.pending_transactions.drain(0..tx_count).collect()
@@ -116,8 +116,8 @@ impl BlockchainState {
         if let Some(validator) = self.validators.get_mut(&validator_address) {
             validator.blocks_produced += 1;
             validator.last_active_slot = self.current_slot;
-            validator.rewards_earned += REWARD_PER_BLOCK;
-            validator.stake += REWARD_PER_BLOCK; // Automatically stake the rewards.
+            validator.rewards_earned += DEFAULT_REWARD_PER_BLOCK;
+            validator.stake += DEFAULT_REWARD_PER_BLOCK; // Automatically stake the rewards.
         }
         // Update blockchain state.
         self.blocks.push(block.clone());
