@@ -1,12 +1,13 @@
 #[cfg(test)]
-mod poh_operations {
+mod operations {
     use std::sync::mpsc::Receiver;
     use std::time::{Duration, Instant};
 
-    use timekeeper::poh::core::{PoH, PoHRecord};
-    use timekeeper::poh::hash;
-    use timekeeper::poh::thread;
-    use timekeeper::{DEFAULT_HASHES_PER_TICK, DEFAULT_MS_PER_TICK, DEFAULT_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT, DEFAULT_US_PER_TICK};
+    use lib::utils::hash;
+    use lib::{DEFAULT_HASHES_PER_TICK, DEFAULT_MS_PER_TICK, DEFAULT_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT, DEFAULT_US_PER_TICK};
+
+    use poh::thread;
+    use poh::types::{PoH, PoHRecord};
 
     #[test]
     fn test_poh_record_construction() {

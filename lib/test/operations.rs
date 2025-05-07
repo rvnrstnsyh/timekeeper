@@ -1,8 +1,8 @@
 #[cfg(test)]
-mod hash_operations {
+mod operations {
     use std::time::{Duration, Instant};
 
-    use timekeeper::poh::hash::extend_hash_chain;
+    use lib::utils::hash::extend_hash_chain;
 
     use ring::digest::{Context, Digest, SHA256};
 

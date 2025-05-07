@@ -1,0 +1,33 @@
+[package]
+name = "poh"
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chrono.workspace = true
+crossterm = "0.29.0"
+hex.workspace = true
+lib = { version = "0.1.0", path = "../lib" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[lints]
+workspace = true
+
+[[test]]
+name = "operations"
+path = "test/operations.rs"
+harness = true
+
+[[bench]]
+name = "operations"
+path = "bench/operations.rs"
+harness = false

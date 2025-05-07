@@ -2,23 +2,11 @@ use std::sync::mpsc::{Receiver, SendError, SyncSender, sync_channel};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::poh::core::{PoH, PoHRecord};
-use crate::poh::hash;
-use crate::{DEFAULT_BATCH_SIZE, DEFAULT_CHANNEL_CAPACITY, DEFAULT_SPINLOCK_THRESHOLD_US, DEFAULT_US_PER_TICK};
+use crate::types::{PoH, PoHRecord};
 
-/// Spawns a thread that generates a Proof of History (PoH) chain with the given seed and
-/// maximum number of ticks. The thread sends `PoHRecord`s over a channel for consumption.
-///
-/// The thread simulates event insertion every 10 ticks and sends `PoHRecord`s in batches
-/// for better performance. The sleep time is calculated more accurately by accounting for
-/// processing time.
-///
-/// # Parameters
-/// - `seed`: A byte slice used to initialize the PoH chain.
-/// - `max_ticks`: The maximum number of ticks to generate.
-///
-/// # Returns
-/// A `Receiver` that can be used to receive `PoHRecord`s from the spawned thread.
+use lib::utils::hash;
+use lib::{DEFAULT_BATCH_SIZE, DEFAULT_CHANNEL_CAPACITY, DEFAULT_SPINLOCK_THRESHOLD_US, DEFAULT_US_PER_TICK};
+
 pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
     let (tx, rx) = sync_channel(DEFAULT_CHANNEL_CAPACITY);
     let seed: Vec<u8> = seed.to_vec();
@@ -50,12 +38,12 @@ pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
             let target_us: u64 = next_tick_target_us;
 
             if elapsed_us < target_us {
-                let sleep_us: u64 = target_us - elapsed_us;
+                let sleep_us: u64 = target_us.saturating_sub(elapsed_us);
                 // Use spin waiting for very short sleeps to improve precision.
                 if sleep_us < DEFAULT_SPINLOCK_THRESHOLD_US {
                     // Spin wait for greater timing precision.
-                    let spin_until: u64 = start.elapsed().as_micros() as u64 + sleep_us;
-                    while start.elapsed().as_micros() < spin_until as u128 {
+                    let spin_until: u128 = start.elapsed().as_micros().saturating_add(sleep_us as u128);
+                    while start.elapsed().as_micros() < spin_until {
                         // Insert a pause instruction to reduce CPU usage during spin-waiting.
                         #[cfg(target_arch = "x86_64")]
                         unsafe {
@@ -68,7 +56,7 @@ pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
                 }
             }
             // Calculate next tick target time.
-            next_tick_target_us += DEFAULT_US_PER_TICK;
+            next_tick_target_us = next_tick_target_us.saturating_add(DEFAULT_US_PER_TICK);
         }
         // Send any remaining records.
         let _ = send_batch(&tx, &mut records_batch);
@@ -76,19 +64,6 @@ pub fn thread(seed: &[u8], max_ticks: u64) -> Receiver<PoHRecord> {
     return rx;
 }
 
-/// Sends a batch of `PoHRecord` items through a synchronous channel.
-///
-/// This function drains the provided vector of `PoHRecord` items and sends each record
-/// through the given `SyncSender`. Once all records are sent, the batch vector is empty.
-///
-/// # Parameters
-/// - `tx`: A reference to a synchronous sender used to send `PoHRecord` items.
-/// - `batch`: A mutable reference to a vector of `PoHRecord` items to be sent. The vector
-///   will be empty after this function is executed.
-///
-/// # Returns
-/// A `Result` indicating success or failure. If sending a record fails, an `mpsc::SendError`
-/// containing the unsent record is returned.
 fn send_batch(tx: &SyncSender<PoHRecord>, batch: &mut Vec<PoHRecord>) -> Result<(), SendError<PoHRecord>> {
     for record in batch.drain(..) {
         tx.send(record)?;
@@ -96,14 +71,9 @@ fn send_batch(tx: &SyncSender<PoHRecord>, batch: &mut Vec<PoHRecord>) -> Result<
     Ok(())
 }
 
-/// Compute a specific number of hashes to simulate CPU-intensive PoH generation
-///
-/// This function is used as part of the PoH process to ensure that the proper
-/// number of hashes (work) is done for each tick
 #[inline]
 pub fn compute_hashes(iterations: u64) {
     // Use a zero-initialized hash as starting point.
-    let zero_hash = [0u8; 32];
-    // Use centralized hash function to extend the hash chain.
+    let zero_hash: [u8; 32] = [0u8; 32];
     let _ = hash::extend_hash_chain(&zero_hash, iterations);
 }
