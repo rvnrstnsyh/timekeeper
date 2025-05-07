@@ -9,12 +9,15 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 chrono.workspace = true
 crossterm = "0.29.0"
 hex.workspace = true
+lazy_static = "1.5.0"
 lib = { version = "0.1.0", path = "../lib" }
 serde.workspace = true
 serde_json.workspace = true
+thread = { version = "0.1.0", path = "../thread" }
 
 [dev-dependencies]
 criterion.workspace = true

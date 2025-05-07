@@ -1,0 +1,22 @@
+[package]
+name = "thread"
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+num_cpus = "1.16.0"
+serde.workspace = true
+
+[lints]
+workspace = true
+
+[[test]]
+name = "native_operations"
+path = "test/native_operations.rs"
+harness = true

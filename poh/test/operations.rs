@@ -118,7 +118,7 @@ mod operations {
         let test_ticks: u64 = 32; // Use a smaller number for reliable testing.
 
         let start: Instant = Instant::now();
-        let rx: Receiver<PoHRecord> = thread::thread(&seed, test_ticks);
+        let rx: Receiver<PoHRecord> = thread::thread(&seed, test_ticks).expect("Failed to spawn PoH thread.");
         let mut records: Vec<PoHRecord> = Vec::with_capacity(test_ticks as usize);
 
         while let Ok(record) = rx.recv() {
@@ -239,7 +239,7 @@ mod operations {
         let test_ticks: u64 = 128; // 2 slots worth of ticks.
 
         let start: Instant = Instant::now();
-        let rx: Receiver<PoHRecord> = thread::thread(&seed, test_ticks);
+        let rx: Receiver<PoHRecord> = thread::thread(&seed, test_ticks).expect("Failed to spawn PoH thread.");
 
         let mut records: Vec<PoHRecord> = Vec::with_capacity(test_ticks as usize);
         let mut last_slot: u64 = 0;

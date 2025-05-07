@@ -128,6 +128,13 @@ fn constant_time_eq(a: &[u8; 32], b: &[u8; 32]) -> bool {
     return result == 0;
 }
 
+#[inline]
+pub fn compute_hashes(iterations: u64) {
+    // Use a zero-initialized hash as starting point.
+    let zero_hash: [u8; 32] = [0u8; 32];
+    let _ = extend_hash_chain(&zero_hash, iterations);
+}
+
 pub fn set_hash_algorithm(algorithm: u8) {
     return unsafe {
         DEFAULT_HASH = match algorithm {

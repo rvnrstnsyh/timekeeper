@@ -5,7 +5,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Utc};
 
-use poh::thread::thread;
+use poh::thread::{cleanup_threads, thread};
 use poh::types::PoHRecord;
 
 use lib::utils::args::{OutputType, parse_args, print_usage};
@@ -50,7 +50,8 @@ fn main() {
     println!("  | 1 Slot is 64 Ticks             | Approximate duration is {} seconds\n  |", duration_approx);
 
     let start_time: Instant = Instant::now();
-    let rx: Receiver<PoHRecord> = thread(&seed, target_ticks);
+    let rx: Receiver<PoHRecord> = thread(&seed, target_ticks).expect("Failed to spawn PoH thread.");
+
     let mut records_received: u64 = 0;
 
     // Performance tracking.
@@ -136,4 +137,5 @@ fn main() {
     println!("  | Average speed: {:.2} ticks/s", ticks_per_second);
     println!("  | For reference: 1 epoch = {} slots = {} ticks", DEFAULT_SLOTS_PER_EPOCH, ticks_per_epoch);
     execute!(stdout(), ResetColor).unwrap();
+    cleanup_threads();
 }
