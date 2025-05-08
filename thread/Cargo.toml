@@ -9,9 +9,11 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+affinity = "0.1.2"
 anyhow.workspace = true
 num_cpus = "1.16.0"
 serde.workspace = true
+thread-priority = "1.2.0"
 
 [lints]
 workspace = true
