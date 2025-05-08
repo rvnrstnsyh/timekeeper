@@ -38,7 +38,7 @@ pub fn set_priority(priority: u8) -> Result<()> {
 
         thread_priority::Thread::current().set_priority_and_policy(policy, prio).map_err(|e| {
             if !PRIORITY_WARNING_SHOWN.swap(true, Ordering::Relaxed) {
-                eprintln!("Warning: Thread priority operations may require elevated privileges");
+                eprintln!("Warning: Thread priority operations may require elevated privileges.");
             }
             anyhow::anyhow!("Failed to set thread priority: {:?}", e)
         })?;
@@ -46,7 +46,7 @@ pub fn set_priority(priority: u8) -> Result<()> {
     #[cfg(not(target_os = "linux"))]
     {
         if !PRIORITY_WARNING_SHOWN.swap(true, Ordering::Relaxed) {
-            eprintln!("Warning: Thread priority is only supported on Linux platforms");
+            eprintln!("Warning: Thread priority is only supported on Linux platforms.");
         }
     }
     return Ok(());
