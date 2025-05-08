@@ -1,8 +1,9 @@
 use std::time::{Duration, Instant};
 
-use timekeeper::poh::core::PoH;
-use timekeeper::poh::hash;
-use timekeeper::{DEFAULT_HASHES_PER_TICK, DEFAULT_US_PER_TICK};
+use poh::types::{PoH, PoHRecord};
+
+use lib::utils::hash;
+use lib::{DEFAULT_HASHES_PER_TICK, DEFAULT_US_PER_TICK};
 
 use criterion::{BenchmarkGroup, BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 
@@ -99,10 +100,10 @@ fn bench_poh_generation(c: &mut Criterion) {
             b.iter(|| {
                 let seed: [u8; 64] = [b'0'; 64];
                 let mut poh: PoH = PoH::new(&seed);
-                let mut records: Vec<timekeeper::poh::core::PoHRecord> = Vec::with_capacity(tick_count as usize);
+                let mut records: Vec<PoHRecord> = Vec::with_capacity(tick_count as usize);
 
                 for i in 0..tick_count {
-                    let record: timekeeper::poh::core::PoHRecord = if i % 10 == 0 {
+                    let record: PoHRecord = if i % 10 == 0 {
                         // Every 10th tick, insert an event.
                         let event_data = format!("Event at tick {}", i);
                         poh.insert_event(event_data.as_bytes())
@@ -175,7 +176,7 @@ fn bench_realtime_performance(c: &mut Criterion) {
                 let start: Instant = Instant::now();
                 // Generate a tick with precise timing.
                 let next_tick_target_us = DEFAULT_US_PER_TICK;
-                let record: timekeeper::poh::core::PoHRecord = poh.next_tick();
+                let record: PoHRecord = poh.next_tick();
                 // Simulate waiting for next tick.
                 let elapsed_us: u64 = start.elapsed().as_micros() as u64;
 

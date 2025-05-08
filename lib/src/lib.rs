@@ -1,20 +1,8 @@
-pub mod blockchain {
-    pub mod block;
-    pub mod processor;
-    pub mod state;
-    pub mod transaction;
-    pub mod validator;
-}
-pub mod helpers {
+pub mod utils {
     pub mod args;
-    pub mod io;
-    pub mod serialization;
-}
-pub mod poh {
-    pub mod core;
     pub mod hash;
-    pub mod thread;
-    pub mod verifier;
+    pub mod json;
+    pub mod serialization;
 }
 
 // Proof of History (PoH) timing constants:
@@ -53,11 +41,5 @@ pub const DEFAULT_NUM_CONSECUTIVE_LEADER_SLOTS: u64 = 4;
 pub const DEFAULT_CHANNEL_CAPACITY: usize = 1_000;
 // Batch size for sending PoH records.
 pub const DEFAULT_BATCH_SIZE: usize = 64;
-// Performance optimization constants.
-pub const DEFAULT_SPINLOCK_THRESHOLD_US: u64 = 250; // Use spinlock for precise timing under threshold
-
-// Blockchain.
-pub const DEFAULT_GENESIS_STAKE: u64 = 1000;
-pub const DEFAULT_MAX_TRANSACTIONS_PER_BLOCK: usize = 300;
-pub const DEFAULT_MIN_TRANSACTIONS_PER_BLOCK: usize = 1;
-pub const DEFAULT_REWARD_PER_BLOCK: u64 = 5;
+// Use spinlock for precise timing under threshold.
+pub const DEFAULT_SPINLOCK_THRESHOLD_US: u64 = 250;

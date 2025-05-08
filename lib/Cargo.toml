@@ -1,0 +1,24 @@
+[package]
+name = "lib"
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+blake3 = "1.8.2"
+hex.workspace = true
+ring = "0.17.14"
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
+
+[[test]]
+name = "operations"
+path = "test/operations.rs"
+harness = true

@@ -4,11 +4,13 @@ use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Utc};
-use timekeeper::helpers::args::{OutputType, parse_args, print_usage};
-use timekeeper::helpers::io::save_poh_records_to_json;
-use timekeeper::poh::core::PoHRecord;
-use timekeeper::poh::thread::thread;
-use timekeeper::{DEFAULT_HASHES_PER_TICK, DEFAULT_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT};
+
+use poh::thread::{cleanup_threads, thread};
+use poh::types::PoHRecord;
+
+use lib::utils::args::{OutputType, parse_args, print_usage};
+use lib::utils::json::write;
+use lib::{DEFAULT_HASHES_PER_TICK, DEFAULT_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT};
 
 use crossterm::{
     cursor::MoveTo,
@@ -17,10 +19,6 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 
-/// Runs a Proof of History (PoH) generator with event insertion and prints the PoH records to stdout.
-/// The PoH generator is started with a given seed and maximum number of ticks, and records are received
-/// over a channel and printed to stdout until the generator finishes. The number of records received is
-/// printed after the generator finishes.
 fn main() {
     // Process command line arguments.
     let args: Vec<String> = env::args().collect();
@@ -52,7 +50,8 @@ fn main() {
     println!("  | 1 Slot is 64 Ticks             | Approximate duration is {} seconds\n  |", duration_approx);
 
     let start_time: Instant = Instant::now();
-    let rx: Receiver<PoHRecord> = thread(&seed, target_ticks);
+    let rx: Receiver<PoHRecord> = thread(&seed, target_ticks).expect("Failed to spawn PoH thread.");
+
     let mut records_received: u64 = 0;
 
     // Performance tracking.
@@ -71,7 +70,7 @@ fn main() {
         let elapsed: f64 = now.duration_since(last_time).as_secs_f64();
 
         if elapsed >= 1.0 {
-            let ticks: u64 = records - tick_count;
+            let ticks: u64 = records.saturating_sub(tick_count);
             let tick_per_second: f64 = ticks as f64 / elapsed;
             let hash_per_second: f64 = tick_per_second * DEFAULT_HASHES_PER_TICK as f64;
             let progress_percent: f64 = (records as f64 / target_ticks as f64) * 100.0;
@@ -82,7 +81,7 @@ fn main() {
                 MoveTo(0, 6),
                 SetForegroundColor(Color::Green),
                 Print(format!(
-                    "  | {:.1}% - {:.2} ticks/s - {:.3} Mh/s\n",
+                    "  | {:.1}% - {:.2} ticks/s - {:.3} MH/s\n",
                     progress_percent,
                     tick_per_second,
                     hash_per_second / 1_000_000.0
@@ -115,11 +114,11 @@ fn main() {
         last_tick_count = result.0;
         last_update = result.1;
         execute!(stdout(), MoveTo(0, 7), Clear(ClearType::CurrentLine), Print(format!("  |\n{}\n", record))).unwrap();
-        records_received += 1;
+        records_received = records_received.saturating_add(1);
     }
     // Save to JSON if needed.
     if let OutputType::JsonFile(filename) = output_type {
-        match save_poh_records_to_json(&all_records, &filename) {
+        match write(&all_records, &filename) {
             Ok(_) => println!("Successfully saved {} records to file {}.", records_received, filename),
             Err(e) => eprintln!("Error saving file: {}", e),
         }
@@ -138,4 +137,5 @@ fn main() {
     println!("  | Average speed: {:.2} ticks/s", ticks_per_second);
     println!("  | For reference: 1 epoch = {} slots = {} ticks", DEFAULT_SLOTS_PER_EPOCH, ticks_per_epoch);
     execute!(stdout(), ResetColor).unwrap();
+    cleanup_threads();
 }

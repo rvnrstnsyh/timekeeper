@@ -1,10 +1,8 @@
-/// Enum to store the output type selection.
 pub enum OutputType {
     Terminal,
     JsonFile(String),
 }
 
-/// Prints a usage message to stdout explaining how to run the program with and without arguments.
 pub fn print_usage() {
     println!("Proof of History (PoH) with output options");
     println!("Usage:");
